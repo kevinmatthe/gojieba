@@ -22,6 +22,7 @@ Jieba NewJieba(const char* dict_path,
       const char* idf_path,
       const char* stop_words_path);
 void FreeJieba(Jieba);
+void Trim();
 
 char** Cut(Jieba handle, const char* sentence, int is_hmm_used);
 char** CutAll(Jieba handle, const char* sentence);

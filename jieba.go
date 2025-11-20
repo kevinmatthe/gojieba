@@ -6,6 +6,7 @@ package gojieba
 #include "jieba.h"
 */
 import "C"
+
 import (
 	"fmt"
 	"os"
@@ -67,6 +68,17 @@ func (x *Jieba) Free() {
 	if atomic.CompareAndSwapInt32(&x.freed, 0, 1) { // only free once
 		C.FreeJieba(x.jieba)
 	}
+}
+
+func (x *Jieba) FreeWithTrim() {
+	x.Free()
+	C.Trim()
+}
+
+func (x *Jieba) WithTrim() *Jieba {
+	runtime.SetFinalizer(x, nil)
+	runtime.SetFinalizer(x, (*Jieba).FreeWithTrim)
+	return x
 }
 
 func (x *Jieba) Cut(s string, hmm bool) []string {

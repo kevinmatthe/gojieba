@@ -2,17 +2,20 @@ package gojieba
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func ExampleJieba() {
 	var s string
 	var words []string
 	use_hmm := true
-	//equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
+	// equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
 	x := NewJieba()
 	defer x.Free()
 
@@ -105,13 +108,13 @@ func ExampleJieba() {
 }
 
 func TestJieba(t *testing.T) {
-	//equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
+	// equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
 	x := NewJieba()
 	defer x.Free()
 	var s string
 	var expected string
 	var actual string
-	var use_hmm = true
+	use_hmm := true
 
 	s = "我来到北京清华大学"
 	expected = "我/来到/北京/清华/清华大学/华大/大学"
@@ -158,10 +161,10 @@ func TestJieba(t *testing.T) {
 	s = "长春市长春药店"
 	wordinfos := x.Tokenize(s, SearchMode, false)
 	expectedwords := []Word{
-		Word{Str: "长春", Start: 0, End: 6},
-		Word{Str: "长春市", Start: 0, End: 9},
-		Word{Str: "长春", Start: 9, End: 15},
-		Word{Str: "药店", Start: 15, End: 21},
+		{Str: "长春", Start: 0, End: 6},
+		{Str: "长春市", Start: 0, End: 9},
+		{Str: "长春", Start: 9, End: 15},
+		{Str: "药店", Start: 15, End: 21},
 	}
 	if !reflect.DeepEqual(wordinfos, expectedwords) {
 		t.Error()
@@ -183,9 +186,9 @@ func TestJiebaCutForSearch(t *testing.T) {
 	}
 	wordinfos := x.Tokenize(s, SearchMode, false)
 	expectedwords := []Word{
-		Word{Str: "长江", Start: 0, End: 6},
-		Word{Str: "大桥", Start: 6, End: 12},
-		Word{Str: "长江大桥", Start: 0, End: 12},
+		{Str: "长江", Start: 0, End: 6},
+		{Str: "大桥", Start: 6, End: 12},
+		{Str: "长江大桥", Start: 0, End: 12},
 	}
 	if !reflect.DeepEqual(wordinfos, expectedwords) {
 		t.Error(wordinfos, expectedwords)
@@ -198,7 +201,7 @@ func TestNewJieba(t *testing.T) {
 }
 
 func BenchmarkJieba(b *testing.B) {
-	//equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
+	// equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
 	x := NewJieba()
 	s := "小明硕士毕业于中国科学院计算所，后在日本京都大学深造"
 	defer x.Free()
@@ -217,7 +220,7 @@ func BenchmarkJieba(b *testing.B) {
 	}
 }
 
-func ExampleExtract() {
+func exampleExtract() {
 	x := NewJieba()
 	defer x.Free()
 
@@ -274,4 +277,76 @@ func TestTypicalDoubleFree(t *testing.T) {
 	defer x.Free()
 
 	runtime.GC() // call GC to run finalizers
+}
+
+func TestFreeEveryTime(*testing.T) {
+	rssBefore := getRSS()
+	x := NewJieba()
+	x.Cut("我是拖拉机学院手扶拖拉机专业的。不用多久，我就会升职加薪，当上CEO，走上人生巅峰。", false)
+	runtime.GC()
+	time.Sleep(time.Second) // ugly, but maybe the only way to make sure the finalizer is called completely
+	rssAfter := getRSS()
+	fmt.Printf("RSS before: %.2f MB, after: %.2f MB\n", rssBefore, rssAfter)
+}
+
+func TestFreeEveryTimeWithTrim(*testing.T) {
+	rssBefore := getRSS()
+	x := NewJieba().WithTrim()
+	x.Cut("我是拖拉机学院手扶拖拉机专业的。不用多久，我就会升职加薪，当上CEO，走上人生巅峰。", false)
+	runtime.GC()
+	time.Sleep(time.Second) // ugly, but maybe the only way to make sure the finalizer is called completely
+	rssAfter := getRSS()
+	fmt.Printf("RSS before: %.2f MB, after: %.2f MB\n", rssBefore, rssAfter)
+}
+
+func BenchmarkFreeAndTrim(b *testing.B) {
+	b.Run("Free", func(b *testing.B) {
+		rssBefore := getRSS()
+		x := NewJieba()
+		b.Run(
+			"Cut",
+			func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					x.CutAll("我是拖拉机学院手扶拖拉机专业的。不用多久，我就会升职加薪，当上CEO，走上人生巅峰。")
+				}
+			},
+		)
+		x.Free()
+		rssAfter := getRSS()
+		fmt.Printf("RSS before: %.2f MB, after: %.2f MB\n", rssBefore, rssAfter)
+	})
+	b.Run("FreeTrim", func(b *testing.B) {
+		rssBefore := getRSS()
+		x := NewJieba()
+		b.Run(
+			"Cut",
+			func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					x.CutAll("我是拖拉机学院手扶拖拉机专业的。不用多久，我就会升职加薪，当上CEO，走上人生巅峰。")
+				}
+			},
+		)
+		x.FreeWithTrim()
+		rssAfter := getRSS()
+		fmt.Printf("RSS before: %.2f MB, after: %.2f MB\n", rssBefore, rssAfter)
+	})
+}
+
+// getRSS 读取 Linux/Unix 系统下的 RSS 内存占用 (单位: MB)
+func getRSS() float64 {
+	// 读取 /proc/self/statm 获取内存信息
+	// 第二列是 RSS (以页为单位)
+	data, err := os.ReadFile("/proc/self/statm")
+	if err != nil {
+		return 0
+	}
+	fields := strings.Fields(string(data))
+	if len(fields) < 2 {
+		return 0
+	}
+	rssPages, _ := strconv.ParseUint(fields[1], 10, 64)
+	pageSize := int64(os.Getpagesize())
+
+	// 转换为 MB
+	return float64(rssPages*uint64(pageSize)) / (1024 * 1024)
 }

@@ -3,6 +3,11 @@ extern "C" {
 }
 
 #include "cppjieba/Jieba.hpp"
+#include "malloc.h"
+
+void Trim() {
+  malloc_trim(0);
+}
 
 static char** ConvertWords(const std::vector<std::string>& words) {
   char ** res = (char**)malloc(sizeof(char*) * (words.size() + 1));
