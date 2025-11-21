@@ -12,7 +12,7 @@ func ExampleJieba() {
 	var s string
 	var words []string
 	use_hmm := true
-	//equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
+	// equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
 	x := NewJieba()
 	defer x.Free()
 
@@ -105,13 +105,13 @@ func ExampleJieba() {
 }
 
 func TestJieba(t *testing.T) {
-	//equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
+	// equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
 	x := NewJieba()
 	defer x.Free()
 	var s string
 	var expected string
 	var actual string
-	var use_hmm = true
+	use_hmm := true
 
 	s = "我来到北京清华大学"
 	expected = "我/来到/北京/清华/清华大学/华大/大学"
@@ -158,10 +158,10 @@ func TestJieba(t *testing.T) {
 	s = "长春市长春药店"
 	wordinfos := x.Tokenize(s, SearchMode, false)
 	expectedwords := []Word{
-		Word{Str: "长春", Start: 0, End: 6},
-		Word{Str: "长春市", Start: 0, End: 9},
-		Word{Str: "长春", Start: 9, End: 15},
-		Word{Str: "药店", Start: 15, End: 21},
+		{Str: "长春", Start: 0, End: 6},
+		{Str: "长春市", Start: 0, End: 9},
+		{Str: "长春", Start: 9, End: 15},
+		{Str: "药店", Start: 15, End: 21},
 	}
 	if !reflect.DeepEqual(wordinfos, expectedwords) {
 		t.Error()
@@ -183,9 +183,9 @@ func TestJiebaCutForSearch(t *testing.T) {
 	}
 	wordinfos := x.Tokenize(s, SearchMode, false)
 	expectedwords := []Word{
-		Word{Str: "长江", Start: 0, End: 6},
-		Word{Str: "大桥", Start: 6, End: 12},
-		Word{Str: "长江大桥", Start: 0, End: 12},
+		{Str: "长江", Start: 0, End: 6},
+		{Str: "大桥", Start: 6, End: 12},
+		{Str: "长江大桥", Start: 0, End: 12},
 	}
 	if !reflect.DeepEqual(wordinfos, expectedwords) {
 		t.Error(wordinfos, expectedwords)
@@ -198,7 +198,7 @@ func TestNewJieba(t *testing.T) {
 }
 
 func BenchmarkJieba(b *testing.B) {
-	//equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
+	// equals with x := NewJieba(DICT_PATH, HMM_PATH, USER_DICT_PATH)
 	x := NewJieba()
 	s := "小明硕士毕业于中国科学院计算所，后在日本京都大学深造"
 	defer x.Free()
@@ -217,7 +217,7 @@ func BenchmarkJieba(b *testing.B) {
 	}
 }
 
-func ExampleExtract() {
+func ExampleJieba_Extract() {
 	x := NewJieba()
 	defer x.Free()
 
